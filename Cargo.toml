@@ -1,0 +1,9 @@
+[workspace]
+
+members = [
+    "simple-engine",
+    "simple-layers",
+    "simple-ui",
+]
+
+resolver = "3"
