@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use mint::Vector2;
+use parking_lot::{Mutex, RwLock};
 use simple_layers::layer::ILayer;
-use simple_ui::{layers::{FlexDirection, FlexLayerBuilder, Layer, RectangleShapeBuilder, Shape, ShapesLayerBuilder}, render::command::UIViewRender, style::FillStyleBuilder, view::*};
+// use simple_ui::{layers::{FlexDirection, FlexLayerBuilder, Layer, RectangleShapeBuilder, Shape, ShapesLayerBuilder}, render::writer::UIViewRenderWriter, source::xml::XmlSource, style::FillStyleBuilder, tree::*, UIControlEvent, UIMouseButton};
 use xdi::{types::error::ServiceBuildResult, ServiceProvider};
+use xui::{tree::UITree, view::UIView, xml::UIXmlSource};
 
 use crate::systems::{render::{MaterialSystem, RenderCommandBuffer, RenderCommandsManager, RenderState}, ui::UIWriter};
 
@@ -12,14 +16,30 @@ pub struct UITestLayer {
     material_system: MaterialSystem,
 
     render_state: RenderState,
+
+    ui_view: Arc<Mutex<UIView>>,
 }
 
 impl UITestLayer {
     pub fn new(sp: ServiceProvider) -> ServiceBuildResult<Self> {
+        let ui_source = UIXmlSource::new(r#"
+            <div classes="w-30 h-20 bg-blue test-color">
+                <div classes="w-20 bg-red">
+                </div>
+                <div classes="w-10 bg-green">
+                </div>
+            </div>
+        "#);
+
+        let ui_tree = ui_source.build();
+
+        let ui_view = UIView::new(Vector2::from([1920, 1080]), Arc::new(RwLock::new(ui_tree)));
+
         Ok(Self {
             render_commands_manager: sp.resolve()?,
             material_system: sp.resolve()?,
             render_state: sp.resolve()?,
+            ui_view: Arc::new(Mutex::new(ui_view))
         })
     }
 }
@@ -29,19 +49,28 @@ impl ILayer for UITestLayer {
         let render_state = self.render_state.clone();
         let material_system = self.material_system.clone();
         let render_commands_manager = self.render_commands_manager.clone();
+        let ui_view = self.ui_view.clone();
 
         scheduler.schedule(async move {
-            let mut render_command_buffer = RenderCommandBuffer::new();
-
-            let mut ui_writer = UIWriter::new(&mut render_command_buffer, &material_system);
-    
             let render_state_lock = render_state.get();
     
             let Some(render_state) = render_state_lock.as_ref() else {
                 return;
             };
+
+            let mut render_command_buffer = RenderCommandBuffer::new();
+
+            let mut ui_writer = UIWriter::new(&mut render_command_buffer, &material_system, [render_state.size.x, render_state.size.y]);
     
-            build_commands(render_state.size, &mut ui_writer);
+            // let mut ui_target_writer = UIEventTargetWriter::new();
+
+            let mut ui_view = ui_view.lock();
+
+            ui_view.resize(render_state.size);
+
+            ui_view.build_draw_commands(&mut ui_writer);
+    
+            // build_commands(render_state.size, &mut ui_writer, &[UIControlEvent::MouseButtonDown { btn: UIMouseButton::Rignt, position: [20, 20].into() }], &mut ui_target_writer);
     
             render_commands_manager.add_buffer(render_command_buffer);
         }, ());
@@ -49,106 +78,36 @@ impl ILayer for UITestLayer {
 }
 
 
-fn build_commands(size: Vector2<u32>, ui_writer: &mut UIWriter<'_>) {
-    let mut view = View::new("Test view", size);
+// fn build_commands(size: Vector2<u32>, ui_writer: &mut UIWriter<'_>, events: &[UIControlEvent], ui_event_target_writer: &mut UIEventTargetWriter) {
+//     let partial_view = XmlSource::parse(r##"
+//         <shape name="left shape" >
+//             <rect size="[60, 60]" position="[2, 12]" color="#00FF00"/>
+//             <rect size="[40, 40]" position="[10, 40]" color="#141414"/>
+//         </shape>
+//         <flex name="Right flex" direction="column" gap="10">
+//             <shape name="right top shape">
+//                 <rect size="[70, 70]" position="[14, 2]" color="rgb(0, 0, 255)"/>
+//                 <rect size="[40, 40]" position="[30, 2]" color="rgb(0, 255, 0)"/>
+//             </shape>
+//             <shape name="right bottom shape">
+//                 <rect size="[300, 300]" position="[14, 2]" color="rgb(255, 0, 0)"/>
+//                 <rect size="[200, 200]" position="[2, 2]" color="rgb(0, 255, 0)"/>
+//             </shape>
+//         </flex>
+//     "##);
+    
+//     let mut view = UITree::new("Test view");
 
-    let mut partial_view = PartialView::new();
+//     let id = view.add_view_layer(Layer::Flex(FlexLayerBuilder::default()
+//         .id("5")
+//         .name("Base flex")
+//         .gap(30u16)
+//         // .fill(FillStyleBuilder::default().color([0, 0, 255, 0]).build().unwrap())
+//         .build()
+//         .unwrap())
+//     );
 
-    partial_view.add_layer(Layer::Shape(ShapesLayerBuilder::default()
-        .id("1")
-        .name("Shape layer 1")
-        .shapes(vec![
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([40, 40])
-                    .position([10, 40])
-                    .fill(FillStyleBuilder::default().color([20, 20, 20]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([60, 60])
-                    .position([2, 12])
-                    .fill(FillStyleBuilder::default().color([0, 255, 0]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-        ])
-        .build()
-        .unwrap())
-    );
+//     view.replace_child_layers(id, partial_view);
 
-    let id = partial_view.add_layer(Layer::Flex(FlexLayerBuilder::default()
-        .id("2")
-        .name("Flex layer 2")
-        .direction(FlexDirection::Vertical)
-        // .fill(FillStyleBuilder::default().color([0, 0, 0, 255]).build().unwrap())
-        .gap(10u16)
-        .build()
-        .unwrap())
-    );
-
-    partial_view.add_child_layer(&id, Layer::Shape(ShapesLayerBuilder::default().id("3")
-        .name("Shape layer 2")
-        .shapes(vec![
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([40, 40])
-                    .position([30, 2])
-                    .fill(FillStyleBuilder::default().color([0, 255, 0]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([70, 70])
-                    .position([14, 2])
-                    .fill(FillStyleBuilder::default().color([0, 0, 255]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-        ])
-        .build()
-        .unwrap()
-    ));
-
-    partial_view.add_child_layer(&id, Layer::Shape(ShapesLayerBuilder::default().id("4")
-        .name("Shape layer 3")
-        .shapes(vec![
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([200, 200])
-                    .position([2, 2])
-                    .fill(FillStyleBuilder::default().color([0, 255, 0]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-            Shape::Rectangle(
-                RectangleShapeBuilder::default()
-                    .size([300, 300])
-                    .position([14, 2])
-                    .fill(FillStyleBuilder::default().color([255, 0, 0]).build().unwrap())
-                    .build()
-                    .unwrap()
-            ),
-        ])
-        .build()
-        .unwrap()
-    ));
-
-    let id = view.add_view_layer(Layer::Flex(FlexLayerBuilder::default()
-        .id("5")
-        .name("Flex layer")
-        .gap(10u16)
-        // .fill(FillStyleBuilder::default().color([0, 0, 255, 0]).build().unwrap())
-        .build()
-        .unwrap())
-    );
-
-    view.replace_child_layers(id, partial_view);
-
-    let render = UIViewRender::new();
-
-    render.write_view(&view, ui_writer);
-}
+//     UIViewRenderWriter::write_view(&view, ui_writer, events, ui_event_target_writer);
+// }

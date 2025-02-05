@@ -31,9 +31,9 @@ pub struct FlexLayer {
     #[builder(default)]
     pub wrap: bool,
 
-    #[serde(rename = "pr")]
-    #[builder(default)]
-    pub per_row: u16,
+    // #[serde(rename = "pr")]
+    // #[builder(default)]
+    // pub per_row: u16,
 
     #[serde(rename = "jc")]
     #[builder(default)]

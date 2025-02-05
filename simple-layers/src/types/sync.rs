@@ -1,32 +1,44 @@
 use async_broadcast::{Receiver, Sender};
 
 #[derive(Debug, Clone)]
-pub struct Waiter(Receiver<()>);
+pub struct Waiter{
+    name: String,
+    r: Receiver<()>
+}
 
 impl Waiter {
-    pub(crate) fn new(r: Receiver<()>) -> Self {
-        Self(r)
+    pub(crate) fn new(name: String, r: Receiver<()>) -> Self {
+        Self {
+            name,
+            r
+        }
     }
 
     pub async fn wait(mut self) {
-        self.0.recv().await.unwrap();
+        self.r.recv().await.expect(&format!("Wait failed: [{}]", self.name));
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Waker(Sender<()>);
+pub struct Waker {
+    name: String,
+    s: Sender<()>
+}
 
 impl Waker {
-    pub(crate) fn new(s: Sender<()>) -> Self {
-        Self(s)
+    pub(crate) fn new(name: String, s: Sender<()>) -> Self {
+        Self {
+            name,
+            s
+        }
     }
 
     pub async fn signal(self) {
-        self.0.broadcast(()).await.unwrap();
+        self.s.broadcast(()).await.expect(&format!("Signal failed: [{}]", self.name));
     }
 }
 
-pub(crate) fn signal_channel() -> (Waker, Waiter) {
+pub(crate) fn signal_channel(name: String) -> (Waker, Waiter) {
     let (s, r) = async_broadcast::broadcast(1);
-    (Waker::new(s), Waiter::new(r))
+    (Waker::new(name.clone(), s), Waiter::new(name, r))
 }

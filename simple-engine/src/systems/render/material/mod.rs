@@ -31,6 +31,7 @@ impl MaterialSystem {
         let name = inner.cache.add_material(&material);
 
         if !inner.materials.contains_key(&name) {
+            tracing::info!("Add material {material:?}");
             inner.materials.insert(name.clone(), Arc::new(material));
         }
 

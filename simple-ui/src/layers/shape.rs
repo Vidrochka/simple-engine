@@ -20,11 +20,11 @@ pub struct ShapesLayer {
 }
 
 impl ShapesLayer {
-    pub fn bounds(&self, view_size: Vector2<u32>) -> Vector2<f32> {
-        let mut max = Vector2::from([0f32, 0f32]);
+    pub fn bounds(&self) -> Vector2<u32> {
+        let mut max = Vector2::from([0, 0]);
 
         for shape in &self.shapes {
-            let bounds = shape.get_bounds(view_size);
+            let bounds = shape.get_bounds();
 
             if bounds.x > max.x {
                 max.x = bounds.x;
@@ -47,30 +47,28 @@ pub enum Shape {
 }
 
 impl Shape {
-    pub fn get_points(&self, offset: &Vector3<f32>, view_size: Vector2<u32>) -> Vec<Vector3<f32>> {
+    pub fn get_points(&self, offset: &Vector3<u32>) -> Vec<Vector3<u32>> {
         match self {
             Shape::Rectangle(rect) => {
-                let view_size = Vector2::from([view_size.x as f32, view_size.y as f32]);
-
                 let points = vec![
                     Vector3::from([
-                        offset.x + rect.position.x as f32 / view_size.x,
-                        offset.y + rect.position.y as f32 / view_size.y,
+                        offset.x + rect.position.x,
+                        offset.y + rect.position.y,
                         offset.z,
                     ]),
                     Vector3::from([
-                        offset.x + rect.position.x as f32 / view_size.x + rect.size.x as f32 / view_size.x,
-                        offset.y + rect.position.y as f32 / view_size.y,
+                        offset.x + rect.position.x + rect.size.x,
+                        offset.y + rect.position.y,
                         offset.z,
                     ]),
                     Vector3::from([
-                        offset.x + rect.position.x as f32 / view_size.x + rect.size.x as f32 / view_size.x,
-                        offset.y + rect.position.y as f32 / view_size.y + rect.size.y as f32 / view_size.y,
+                        offset.x + rect.position.x + rect.size.x,
+                        offset.y + rect.position.y + rect.size.y,
                         offset.z,
                     ]),
                     Vector3::from([
-                        offset.x + rect.position.x as f32 / view_size.x,
-                        offset.y + rect.position.y as f32 / view_size.y + rect.size.y as f32 / view_size.y,
+                        offset.x + rect.position.x,
+                        offset.y + rect.position.y + rect.size.y,
                         offset.z,
                     ]),
                 ];
@@ -86,11 +84,10 @@ impl Shape {
         }
     }
 
-    pub fn get_bounds(&self, view_size: Vector2<u32>) -> Vector2<f32> {
+    pub fn get_bounds(&self) -> Vector2<u32> {
         match self {
             Shape::Rectangle(rect) => {
-                let view_size = Vector2::from([view_size.x as f32, view_size.y as f32]);
-                Vector2::from([rect.size.x as f32 / view_size.x + rect.position.x as f32 / view_size.x, rect.size.y as f32 / view_size.y + rect.position.y as f32 / view_size.y])
+                Vector2::from([rect.size.x + rect.position.x, rect.size.y + rect.position.y])
             }
         }
     }

@@ -44,4 +44,11 @@ impl Layer {
             _ => None,
         }
     }
+    
+    pub fn as_shape_mut(&mut self) -> Option<&mut ShapesLayer> {
+        match self {
+            Self::Shape(shape) => Some(shape),
+            _ => None,
+        }
+    }
 }

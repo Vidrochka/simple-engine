@@ -41,7 +41,7 @@ impl LayerScheduler {
 
         self.scheduled_tasks_by_name.insert(lc.name(), lc.id());
         
-        let (wk, wt) = signal_channel();
+        let (wk, wt) = signal_channel(lc.name());
         
         let deps = deps.into();
 

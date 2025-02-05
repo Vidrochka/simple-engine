@@ -1,13 +1,13 @@
 use mint::{Vector2, Vector3};
 
-use crate::{layers::{FlexDirection, FlexLayerBuilder, Layer, RectangleShapeBuilder, Shape, ShapesLayerBuilder}, render::command::{IUIWriter, UIViewRender}, style::{FillStyleBuilder, UIMaterial}, view::{PartialView, View}};
+use crate::{layers::{FlexDirection, FlexLayerBuilder, Layer, RectangleShapeBuilder, Shape, ShapesLayerBuilder}, render::writer::{IUIEventTargetWriter, IUIWriter, UIViewRenderWriter}, style::{FillStyleBuilder, UIMaterial}, tree::{PartialUITree, UITree}};
 
 
 #[test]
 pub fn build_render_commands_ok() {
-    let mut view = View::new("Test view", Vector2::from_slice(&[1920, 1080]));
+    let mut view = UITree::new("Test view");
 
-    let mut partial_view = PartialView::new();
+    let mut partial_view = PartialUITree::new();
 
     partial_view.add_layer(Layer::Shape(ShapesLayerBuilder::default()
         .id("1")
@@ -98,18 +98,12 @@ pub fn build_render_commands_ok() {
         .unwrap())
     );
 
-    println!("{partial_view:#?}");
-
     view.replace_child_layers(id, partial_view);
-
-    println!("{view:#?}");
-
-    let render = UIViewRender::new();
 
     pub struct UIWriter;
 
     impl IUIWriter for UIWriter {
-        fn write_shape(&mut self, layer_name: String, points: Vec<Vector3<f32>>, indexes: Vec<u16>, material_name: String) {
+        fn write_shape(&mut self, layer_name: String, points: Vec<Vector3<u32>>, indexes: Vec<u16>, material_name: String) {
         }
 
         fn add_material(&mut self, material: UIMaterial) -> String {
@@ -117,5 +111,13 @@ pub fn build_render_commands_ok() {
         }
     }
 
-    render.write_view(&view, &mut UIWriter);
+    pub struct UIEventTargetWriter;
+
+    impl IUIEventTargetWriter for UIEventTargetWriter {
+        fn target<'a>(&mut self, layer_id: &crate::layer_id::LayerId, event: &'a crate::UIControlEvent) {
+            
+        }
+    }
+
+    UIViewRenderWriter::write_view(&view, &mut UIWriter, &vec![], &mut UIEventTargetWriter);
 } 

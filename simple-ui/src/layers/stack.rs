@@ -17,9 +17,9 @@ pub struct StackLayer {
     #[serde(rename = "l")]
     #[builder(default)]
     pub layers: Vec<LayerId>,
-    #[serde(rename = "s", skip_serializing_if = "Option::is_none", default)]
-    #[builder(default)]
-    pub size: Option<Vector2<u32>>,
+    // #[serde(rename = "s", skip_serializing_if = "Option::is_none", default)]
+    // #[builder(default)]
+    // pub size: Option<Vector2<u32>>,
 }
 
 impl StackLayer {

@@ -28,7 +28,8 @@ cfg-if = "1"
 parking_lot = "0.12"
 
 simple-layers = { path = "../simple-layers" }
-simple-ui = { path = "../simple-ui"}
+# simple-ui = { path = "../simple-ui"}
+xui = { path = "../xui"}
 
 tokio = { version = "1", default-features = false, features = ["rt", "rt-multi-thread"] }
 
@@ -43,6 +44,14 @@ mint = "0.5"
 bytemuck = "1"
 
 uuid = { version = "1", features = ["v4", "serde"] }
+
+serde_json = { version = "*" }
+
+derive_builder = "*"
+
+strum = { version = "*", features = ["derive"] }
+
+crossbeam-channel = "*"
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 console_error_panic_hook = "0.1"

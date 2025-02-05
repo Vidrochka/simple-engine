@@ -1,3 +1,5 @@
+pub mod device;
+
 use std::sync::Arc;
 
 use mint::Vector2;

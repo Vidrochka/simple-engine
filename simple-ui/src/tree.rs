@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::HashSet;
 
-use ahash::{AHashMap, AHasher};
+use ahash::AHashMap;
 use mint::Vector2;
 use serde::Serialize;
 
@@ -10,25 +10,19 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct View {
-    size: Vector2<u32>,
+pub struct UITree {
     root_id: LayerId,
     layers: AHashMap<LayerId, Layer>,
 }
 
-impl View {
-    pub fn new(name: &str, size: Vector2<u32>) -> Self {
+impl UITree {
+    pub fn new(name: &str) -> Self {
         let stack = StackLayerBuilder::default().name(name).build().unwrap();
 
         Self {
-            size,
             root_id: stack.id.clone(),
             layers: AHashMap::from([(stack.id.clone(), Layer::Stack(stack))]),
         }
-    }
-
-    pub fn resize(&mut self, size: Vector2<u32>) {
-        self.size = size;
     }
 
     pub fn root_id(&self) -> &LayerId {
@@ -53,7 +47,7 @@ impl View {
         id
     }
 
-    pub fn replace_child_layers(&mut self, layer_id: LayerId, partial_view: PartialView) {
+    pub fn replace_child_layers(&mut self, layer_id: LayerId, partial_view: PartialUITree) {
         // TODO: add error processing
         let layer = self.layers.get_mut(&layer_id).unwrap();
 
@@ -81,19 +75,19 @@ impl View {
             _ => panic!("add error processing"), //TODO: add error processing
         };
     }
-    
-    pub fn size(&self) -> Vector2<u32> {
-        self.size
+
+    pub fn ids(&self) -> impl Iterator<Item = &LayerId> {
+        self.layers.keys()
     }
 }
 
 #[derive(Debug, Serialize)]
-pub struct PartialView {
+pub struct PartialUITree {
     root: Vec<LayerId>,
     layers: AHashMap<LayerId, Layer>,
 }
 
-impl PartialView {
+impl PartialUITree {
     pub fn new() -> Self {
         Self {
             root: vec![],

@@ -1,0 +1,30 @@
+[package]
+name = "xui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+uuid = { version = "*", features = ["v4"] }
+
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+
+ahash = { version = "*", features = ["serde"] }
+
+mint = { version = "*", features = ["serde"] }
+
+tracing = "*"
+
+earcutr = "*"
+
+quick-xml = "0.37"
+
+csscolorparser = "0.7.0"
+
+rstar = { version = "*", features = ["mint"] }
+
+derive_builder = "*"
+
+parking_lot = "0.12"
+
+cssparser = "0.34.0"

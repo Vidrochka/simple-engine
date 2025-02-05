@@ -19,6 +19,12 @@ tracing = "*"
 
 earcutr = "*"
 
+quick-xml = "0.37"
+
+csscolorparser = "0.7.0"
+
+rstar = { version = "*", features = ["mint"] }
+
 [dev-dependencies]
 wgpu = { version = "23.0.1", features = ["webgl"]}
 winit = { version = "0.30.7", features = ["rwh_05"] }

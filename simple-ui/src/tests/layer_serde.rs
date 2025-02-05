@@ -45,8 +45,7 @@ fn shape_rectangle_serde_ok() {
         "c": [
           255,
           0,
-          0,
-          255
+          0
         ]
       }
     }
@@ -84,6 +83,7 @@ fn shape_flex_serde_ok() {
     "2"
   ],
   "wr": false,
-  "pr": 0
+  "pr": 0,
+  "jc": "s"
 }"#);
 }
