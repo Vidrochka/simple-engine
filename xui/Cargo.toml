@@ -28,3 +28,13 @@ derive_builder = "*"
 parking_lot = "0.12"
 
 cssparser = "0.34.0"
+
+xui-macro = { path = "../xui-macro" }
+
+petgraph = "*"
+cfg-if = "*"
+
+itertools = "*"
+
+[features]
+debug-ids = []

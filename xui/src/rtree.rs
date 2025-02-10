@@ -4,16 +4,24 @@ use rstar::{AABB, RTree, RTreeObject};
 
 use crate::node::UINodeId;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct ElementBounds {
-    position: Vector3<u32>,
-    size: Vector2<u32>,
+    position: Vector3<f32>,
+    size: Vector2<f32>,
 
     id: UINodeId,
 }
 
+impl Eq for ElementBounds {}
+
+impl PartialEq for ElementBounds {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position && self.size == other.size && self.id == other.id
+    }
+}
+
 impl ElementBounds {
-    pub(crate) fn new(position: Vector3<u32>, size: Vector2<u32>, id: UINodeId) -> Self {
+    pub(crate) fn new(position: Vector3<f32>, size: Vector2<f32>, id: UINodeId) -> Self {
         Self { position, size, id }
     }
 
@@ -28,14 +36,14 @@ impl RTreeObject for ElementBounds {
     fn envelope(&self) -> Self::Envelope {
         AABB::from_corners(
             [
-                self.position.x as f32,
-                self.position.y as f32,
-                self.position.z as f32,
+                self.position.x,
+                self.position.y,
+                self.position.z,
             ],
             [
-                (self.position.x + self.size.x) as f32,
-                (self.position.y + self.size.y) as f32,
-                self.position.z as f32,
+                self.position.x + self.size.x,
+                self.position.y + self.size.y,
+                self.position.z,
             ],
         )
     }

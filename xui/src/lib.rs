@@ -7,3 +7,7 @@ pub mod xml;
 pub mod view;
 pub mod rtree;
 pub mod css;
+pub mod component;
+pub mod algo;
+
+pub use xui_macro::template;

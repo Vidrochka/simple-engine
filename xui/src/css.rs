@@ -1,6 +1,6 @@
 use cssparser::{CowRcStr, ParseError, Parser, ParserInput, Token};
 
-use crate::style::{FlexDirection, UIStyle, UIStyleRules, UIStyleRulesBuilder, Unit};
+use crate::style::{FlexDirection, Margin, MarginBuilder, PaddingBuilder, SizeValue, UIStyle, UIStyleRules, UIStyleRulesBuilder, Unit};
 
 
 pub struct UICSSSource {
@@ -43,6 +43,35 @@ impl UICSSSource {
                         tracing::info!("Parsed {unit_value}%");
                         Unit::Percent((*unit_value * 100.0) as u16)
                     },
+                    Token::Ident(ident) if ident.as_str() == "auto" => {
+                        Unit::Percent(100)
+                    }
+                    token => {
+                        panic!("Unsupported token '{token:?}'");
+                    }
+                }
+            }
+
+            fn unpack_size_value_as_unit<'a>(parser: &'a mut Parser<'_, '_>) -> SizeValue {
+                match parser.next().unwrap() {
+                    Token::Dimension { value, unit, .. } => {
+                        if unit.as_str() == "px" {
+                            tracing::info!("Parsed {value}px");
+                            SizeValue::Unit(Unit::Pixel(*value as u32))
+                        } else {
+                            panic!("Unsupported unit {unit:?}")
+                        }
+                    },
+                    Token::Percentage { unit_value, .. } => {
+                        tracing::info!("Parsed {unit_value}%");
+                        SizeValue::Unit(Unit::Percent((*unit_value * 100.0) as u16))
+                    },
+                    Token::Ident(ident) if ident.as_str() == "auto" => {
+                        SizeValue::Auto
+                    },
+                    Token::Ident(ident) if ident.as_str() == "fit-content" => {
+                        SizeValue::FitContent
+                    },
                     token => {
                         panic!("Unsupported token '{token:?}'");
                     }
@@ -70,7 +99,7 @@ impl UICSSSource {
                         "width" => {
                             parser.expect_colon()?;
     
-                            let unit = unpack_value_as_unit(&mut parser);
+                            let unit = unpack_size_value_as_unit(&mut parser);
     
                             style_builder.width(unit);
     
@@ -79,9 +108,52 @@ impl UICSSSource {
                         "height" => {
                             parser.expect_colon()?;
     
-                            let unit = unpack_value_as_unit(&mut parser);
+                            let unit = unpack_size_value_as_unit(&mut parser);
     
                             style_builder.height(unit);
+    
+                            parser.expect_semicolon()?;
+                        },
+                        "padding" => {
+                            parser.expect_colon()?;
+    
+                            let unit = unpack_value_as_unit(&mut parser);
+    
+                            style_builder.padding(
+                                PaddingBuilder::default()
+                                    .left(unit)
+                                    .right(unit)
+                                    .bottom(unit)
+                                    .top(unit)
+                                    .build()
+                                    .unwrap()
+                            );
+    
+                            parser.expect_semicolon()?;
+                        },
+                        "margin" => {
+                            parser.expect_colon()?;
+    
+                            let unit = unpack_value_as_unit(&mut parser);
+    
+                            style_builder.margin(
+                                MarginBuilder::default()
+                                    .left(unit)
+                                    .right(unit)
+                                    .bottom(unit)
+                                    .top(unit)
+                                    .build()
+                                    .unwrap()
+                            );
+    
+                            parser.expect_semicolon()?;
+                        },
+                        "gap" => {
+                            parser.expect_colon()?;
+    
+                            let unit = unpack_value_as_unit(&mut parser);
+    
+                            style_builder.gap(unit);
     
                             parser.expect_semicolon()?;
                         },

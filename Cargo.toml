@@ -3,8 +3,7 @@
 members = [
     "simple-engine",
     "simple-layers",
-    # "simple-ui",
-    "xui",
+    "xui", "xui-macro",
 ]
 
 resolver = "3"

@@ -1,0 +1,39 @@
+.button__outer-space {
+    padding: 5px;
+    background-color: #bababa;
+
+    width: 20px;
+    height: 20px;
+}
+
+.button__inner-space {
+    background-color: #898989;
+    width: 20px;
+    height: 20px;
+}
+
+.outer-content-box {
+    /* margin: 20px;
+    gap: 10px; */
+
+    background-color: aqua;
+    width: fit-content;
+    height: fit-content;
+
+    flex-direction: row;
+
+    padding: 10px;
+    margin: 20px;
+}
+
+.red-box {
+    background-color: red;
+    width: 100px;
+    height: 100px;
+}
+
+.green-box {
+    background-color: green;
+    width: 200px;
+    height: 200px;
+}

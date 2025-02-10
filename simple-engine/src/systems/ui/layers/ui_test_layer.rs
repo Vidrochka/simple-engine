@@ -5,9 +5,15 @@ use parking_lot::{Mutex, RwLock};
 use simple_layers::layer::ILayer;
 // use simple_ui::{layers::{FlexDirection, FlexLayerBuilder, Layer, RectangleShapeBuilder, Shape, ShapesLayerBuilder}, render::writer::UIViewRenderWriter, source::xml::XmlSource, style::FillStyleBuilder, tree::*, UIControlEvent, UIMouseButton};
 use xdi::{types::error::ServiceBuildResult, ServiceProvider};
-use xui::{tree::UITree, view::UIView, xml::UIXmlSource};
+use xui::{component::ComponentsRegistry, tree::UITree, view::UIView, xml::UIXmlSource};
 
-use crate::systems::{render::{MaterialSystem, RenderCommandBuffer, RenderCommandsManager, RenderState}, ui::UIWriter};
+use crate::{
+    systems::{
+        render::{MaterialSystem, RenderCommandBuffer, RenderCommandsManager, RenderState},
+        ui::UIWriter
+    },
+    ui::components::button::ButtonComponent,
+};
 
 
 #[derive(Debug)]
@@ -22,18 +28,24 @@ pub struct UITestLayer {
 
 impl UITestLayer {
     pub fn new(sp: ServiceProvider) -> ServiceBuildResult<Self> {
-        let ui_source = UIXmlSource::new(r#"
-            <div classes="w-30 h-20 bg-blue test-color">
-                <div classes="w-20 bg-red">
-                </div>
-                <div classes="w-10 bg-green">
-                </div>
-            </div>
-        "#);
+        let component_registry = ComponentsRegistry::new();
 
-        let ui_tree = ui_source.build();
+        component_registry.register_component(ButtonComponent::default());
 
-        let ui_view = UIView::new(Vector2::from([1920, 1080]), Arc::new(RwLock::new(ui_tree)));
+        let ui_tree = component_registry.build_components_tree("button");
+
+        // let ui_source = UIXmlSource::new(r#"
+        //     <div classes="w-30 h-20 bg-blue test-color">
+        //         <div classes="w-20 bg-red">
+        //         </div>
+        //         <div classes="w-10 bg-green">
+        //         </div>
+        //     </div>
+        // "#);
+
+        // let ui_tree = ui_source.build();
+
+        let ui_view = UIView::new(Vector2::from([1920.0, 1080.0]), Arc::new(RwLock::new(ui_tree)));
 
         Ok(Self {
             render_commands_manager: sp.resolve()?,
@@ -66,7 +78,7 @@ impl ILayer for UITestLayer {
 
             let mut ui_view = ui_view.lock();
 
-            ui_view.resize(render_state.size);
+            ui_view.resize([render_state.size.x as f32, render_state.size.y as f32].into());
 
             ui_view.build_draw_commands(&mut ui_writer);
     

@@ -1,0 +1,12 @@
+<!-- <div classes="button__outer-space">
+    <div classes="button__inner-space">
+        test
+    </div>
+</div> -->
+
+           <div classes="outer-content-box">
+                <div classes="red-box">
+                </div>
+                <div classes="green-box">
+                </div>
+            </div>

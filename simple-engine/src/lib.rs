@@ -16,6 +16,7 @@ use xdi::{builder::DiBuilder, types::error::ServiceBuildResult, ServiceProvider}
 
 pub mod systems;
 pub mod window;
+pub mod ui;
 
 #[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub fn run() -> Result<(), impl std::error::Error> {

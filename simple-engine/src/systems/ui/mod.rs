@@ -32,7 +32,7 @@ impl IUIWriter for UIWriter<'_> {
     fn write_shape(
         &mut self,
         id: &UINodeId,
-        points: Vec<Vector3<u32>>,
+        points: Vec<Vector3<f32>>,
         indexes: Vec<u16>,
         material_name: String,
     ) {

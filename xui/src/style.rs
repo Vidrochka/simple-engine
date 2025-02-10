@@ -4,7 +4,7 @@ use mint::{Vector2, Vector3, Vector4};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::node::UINodeId;
+use crate::{node::UINodeId, view::ContentBox};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UIStyle {
@@ -27,32 +27,74 @@ pub struct UIStyleRules {
 
     pub padding: Padding,
 
-    pub width: Option<Unit>,
-    pub height: Option<Unit>,
+    pub width: Option<SizeValue>,
+    pub height: Option<SizeValue>,
 }
 
 impl UIStyleRules {
-    pub(crate) fn calc_bounds(&self, available_space: Vector2<u32>) -> NodeBounds {
-        let width = if let Some(width) = self.width {
-            width.calc(available_space.x)
-        } else {
-            available_space.x
-        };
+    /// Высчитывает контент относительно размера
+    pub (crate) fn calc_content_box(&self, size: Vector2<f32>, parent_size: Vector2<f32>) -> ContentBox {
+        /// Если размер по контенту, фактическое пространство с которого рассчитывается размер вложенного контента - внешний родитель
+        let size: Vector2<f32> = [
+            if let Some(SizeValue::FitContent) = self.width {
+                // parent_size.x
+                size.x
+            } else {
+                size.x
+            },
+            if let Some(SizeValue::FitContent) = self.height {
+                // parent_size.y
+                size.y
+            } else {
+                size.y
+            },
+        ].into();
 
-        let height = if let Some(height) = self.height {
-            height.calc(available_space.y)
-        } else {
-            available_space.y
-        };
+        let half_width = size.x / 2.0;
+        let half_height = size.y / 2.0;
 
-        let size = Vector2 { x: width, y: height };
-
-        NodeBounds {
-            size: size,
-            inner_space: self.padding.calc_inner_size(size),
-            outer_space: self.margin.calc_outer_size(size),
+        ContentBox {
+            left: half_width - self.padding.left.unwrap_or(Unit::Pixel(0)).calc(parent_size.x),
+            right: half_width - self.padding.right.unwrap_or(Unit::Pixel(0)).calc(parent_size.x),
+            top: half_height - self.padding.top.unwrap_or(Unit::Pixel(0)).calc(parent_size.y),
+            bottom: half_height - self.padding.bottom.unwrap_or(Unit::Pixel(0)).calc(parent_size.y),
         }
     }
+
+    /// Высчитывает контент относительно размера
+    pub (crate) fn calc_outer_box(&self, size: Vector2<f32>, parent_size: Vector2<f32>) -> ContentBox {
+        let half_width = size.x / 2.0;
+        let half_height = size.y / 2.0;
+
+        ContentBox {
+            left: half_width + self.margin.left.unwrap_or(Unit::Pixel(0)).calc(parent_size.x),
+            right: half_width + self.margin.right.unwrap_or(Unit::Pixel(0)).calc(parent_size.x),
+            top: half_height + self.margin.top.unwrap_or(Unit::Pixel(0)).calc(parent_size.y),
+            bottom: half_height + self.margin.bottom.unwrap_or(Unit::Pixel(0)).calc(parent_size.y),
+        }
+    }
+
+    // pub(crate) fn calc_bounds(&self, available_space: Vector2<u32>) -> NodeBounds {
+    //     let width = if let Some(width) = self.width {
+    //         width.calc(available_space.x)
+    //     } else {
+    //         available_space.x
+    //     };
+
+    //     let height = if let Some(height) = self.height {
+    //         height.calc(available_space.y)
+    //     } else {
+    //         available_space.y
+    //     };
+
+    //     let size = Vector2 { x: width, y: height };
+
+    //     NodeBounds {
+    //         inner_size: size,
+    //         content_size: self.padding.calc_inner_size(size),
+    //         outer_bounds: self.margin.calc_outer_size(size),
+    //     }
+    // }
 
     pub fn merge<'a>(styles: impl Iterator<Item = &'a UIStyleRules>) -> UIStyleRules {
         styles.fold(UIStyleRules::default(), |mut merged_style, style| {
@@ -124,31 +166,31 @@ pub struct Margin {
 }
 
 impl Margin {
-    pub fn calc_outer_size(&self, size: Vector2<u32>) -> BoxBounds {
-        fn calc_margin_offset(size: u32, margin: Option<Unit>) -> u32 {
-            if let Some(margin) = margin {
-                margin.calc(size)
-            } else {
-                0
-            }
-        };
+    // pub fn calc_outer_size(&self, size: Vector2<u32>) -> BoxBounds {
+    //     fn calc_margin_offset(size: u32, margin: Option<Unit>) -> u32 {
+    //         if let Some(margin) = margin {
+    //             margin.calc(size)
+    //         } else {
+    //             0
+    //         }
+    //     };
 
-        let lm = calc_margin_offset(size.x, self.left);
-        let rm = calc_margin_offset(size.x, self.right);
-        let tm = calc_margin_offset(size.y, self.top);
-        let bm = calc_margin_offset(size.y, self.bottom);
+    //     let lm = calc_margin_offset(size.x, self.left);
+    //     let rm = calc_margin_offset(size.x, self.right);
+    //     let tm = calc_margin_offset(size.y, self.top);
+    //     let bm = calc_margin_offset(size.y, self.bottom);
 
-        BoxBounds {
-            size: Vector2 {
-                x: size.x + lm + rm,
-                y: size.y + tm + bm,
-            },
-            offset: Vector2 {
-                x: lm,
-                y: tm,
-            }
-        }
-    }
+    //     BoxBounds {
+    //         size: Vector2 {
+    //             x: size.x + lm + rm,
+    //             y: size.y + tm + bm,
+    //         },
+    //         offset: Vector2 {
+    //             x: lm,
+    //             y: tm,
+    //         }
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, Builder)]
@@ -161,54 +203,54 @@ pub struct Padding {
 }
 
 impl Padding {
-    pub fn calc_inner_size(&self, size: Vector2<u32>) -> BoxBounds {
-        fn calc_padding_offset(size: u32, padding: Option<Unit>) -> u32 {
-            if let Some(padding) = padding {
-                padding.calc(size)
-            } else {
-                0
-            }
-        };
+    // pub fn calc_inner_size(&self, size: Vector2<u32>) -> BoxBounds {
+    //     fn calc_padding_offset(size: u32, padding: Option<Unit>) -> u32 {
+    //         if let Some(padding) = padding {
+    //             padding.calc(size)
+    //         } else {
+    //             0
+    //         }
+    //     };
 
-        let lp = calc_padding_offset(size.x, self.left);
-        let rp = calc_padding_offset(size.x, self.right);
-        let tp = calc_padding_offset(size.y, self.top);
-        let bp = calc_padding_offset(size.y, self.bottom);
+    //     let lp = calc_padding_offset(size.x, self.left);
+    //     let rp = calc_padding_offset(size.x, self.right);
+    //     let tp = calc_padding_offset(size.y, self.top);
+    //     let bp = calc_padding_offset(size.y, self.bottom);
 
-        let (lp, rp) = if lp + rp > size.x {
-            let row_size = lp + rp;
+    //     let (lp, rp) = if lp + rp > size.x {
+    //         let row_size = lp + rp;
 
-            (
-                size.x / row_size * lp,
-                size.x / row_size * rp
-            )
-        } else {
-            (lp, rp)
-        };
+    //         (
+    //             size.x / row_size * lp,
+    //             size.x / row_size * rp
+    //         )
+    //     } else {
+    //         (lp, rp)
+    //     };
 
-        let (tp, bp) = if tp + bp > size.y {
-            let col_size = tp + bp;
+    //     let (tp, bp) = if tp + bp > size.y {
+    //         let col_size = tp + bp;
 
-            (
-                size.y / col_size * tp,
-                size.y / col_size * bp
-            )
-        } else {
-            (tp, bp)
-        };
+    //         (
+    //             size.y / col_size * tp,
+    //             size.y / col_size * bp
+    //         )
+    //     } else {
+    //         (tp, bp)
+    //     };
 
 
-        BoxBounds {
-            size: Vector2 {
-                x: size.x - lp - rp,
-                y: size.y - tp - bp,
-            },
-            offset: Vector2 {
-                x: lp,
-                y: tp,
-            }
-        }
-    }
+    //     BoxBounds {
+    //         size: Vector2 {
+    //             x: size.x - lp - rp,
+    //             y: size.y - tp - bp,
+    //         },
+    //         offset: Vector2 {
+    //             x: lp,
+    //             y: tp,
+    //         }
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -218,20 +260,7 @@ pub enum FlexDirection {
     Col,
 }
 
-/// Границы объекта без учета позиции
-#[derive(Debug, PartialEq, Eq)]
-pub struct NodeBounds {
-    pub (crate) size: Vector2<u32>,
 
-    pub (crate) inner_space: BoxBounds,
-    pub (crate) outer_space: BoxBounds,
-}
-
-impl Default for NodeBounds {
-    fn default() -> Self {
-        Self { size: [0,0].into(), inner_space: Default::default(), outer_space: Default::default() }
-    }
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BoxBounds {
@@ -259,12 +288,20 @@ pub enum Unit {
 }
 
 impl Unit {
-    pub fn calc(&self, size: u32) -> u32 {
+    pub fn calc(&self, size: f32) -> f32 {
         match self {
-            Unit::Pixel(px) => *px,
-            Unit::Percent(percent) => size / 100 * (*percent).min(100u16) as u32,
+            Unit::Pixel(px) => *px as f32,
+            Unit::Percent(percent) => size / 100.0 * (*percent as f32).min(100.0),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SizeValue {
+    #[default]
+    Auto,
+    FitContent,
+    Unit(Unit)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
